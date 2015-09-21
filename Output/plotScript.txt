@@ -1,0 +1,3 @@
+set xlabel "No. of iterations"
+set ylabel "Cost J"
+plot "cost.dat" using 1:2 with lines title 'Cost'
