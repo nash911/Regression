@@ -18,8 +18,7 @@
 
 Regression::Regression(const DataSet& ds):d_dset(ds)
 {
-    d_Theta.set_size(ds.N() + 1);
-    //d_Theta.zeros();
+    d_Theta.set_size((ds.N() + 1),1);
     d_Theta.randu();
 
     d_alpha = 0.1;
@@ -36,7 +35,7 @@ Regression::~Regression()
     d_lamdaCostGraph.close();
 }
 
-vec Regression::theta(void) const
+mat Regression::theta(void) const
 {
     return d_Theta;
 }
@@ -47,7 +46,10 @@ void Regression::printTheta(void) const
     cout << endl << "Theta:" << endl;
     for(unsigned int i=0; i<d_Theta.n_rows; i++)
     {
-        cout << "theta_" << i << ":" << d_Theta(i) << endl;
+        for(unsigned int j=0; j<d_Theta.n_cols; j++)
+        {
+            cout << "theta[" << i << "," << j << "]:" << d_Theta(i,j) << endl;
+        }
     }
 }
 
@@ -58,13 +60,13 @@ void Regression::init_theta(void)
     {
         cerr << "Regression: Regression class." << endl
              << "void init_theta(void) method" << endl
-             << "Cannot initialize empty theta vector." << endl;
+             << "Cannot initialize empty theta matrix." << endl;
 
         exit(1);
     }
     else
     {
-        d_Theta.zeros();
+        d_Theta.randu();
     }
 }
 

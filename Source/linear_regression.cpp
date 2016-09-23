@@ -70,15 +70,15 @@ double LinearRegression::cost(mat X, const vec y) const
     vec X_0 = ones<vec>(m);
     X.insert_cols(0, X_0);
 
-    vec theta = d_Theta;
-    theta(0) = 0;
+    mat theta = d_Theta;
+    theta(0,0) = 0;
 
     //--           _                                   _ --//
     //--        1 |  m                         n        |--//
     //--J(Ө) = ---|  ∑[h_Ө(x⁽i⁾) - y⁽i⁾]^2 +  λ∑(Ө_j)^2]|--//
     //--       2m |_ i                         j       _|--//
 
-    cost = (1.0/(2.0*m)) * ((((X * d_Theta) - y).t() * ((X * d_Theta) - y)) + (d_lamda * sum(theta % theta)));
+    cost = (1.0/(2.0*m)) * ((((X * d_Theta) - y).t() * ((X * d_Theta) - y)) + (d_lamda * accu(theta % theta)));
 
     return(cost(0));
 }
@@ -108,8 +108,8 @@ double LinearRegression::gradientdescent(const double delta)
 
     do
     {
-        vec theta = d_Theta;
-        theta(0) = 0;
+        mat theta = d_Theta;
+        theta(0,0) = 0;
 
         //--                1                               --//
         //-- Θ_j := Θ_j - 𝛼---(X'(XΘ - y))           ∀ j = 0--//

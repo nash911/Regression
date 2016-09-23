@@ -32,7 +32,7 @@ public:
     Regression(const DataSet&);
     ~Regression();
 
-    vec theta(void) const;
+    mat theta(void) const;
     void init_theta(void);
     void printTheta(void) const;
 
@@ -47,7 +47,7 @@ public:
     virtual double gradientdescent(const double) = 0;
 
 protected:
-    vec d_Theta;
+    mat d_Theta;
 
     const DataSet& d_dset;
 

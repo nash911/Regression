@@ -70,13 +70,13 @@ double LogisticRegression::cost(mat X, const vec y) const
     vec cost;
     vec sig = sigmoid(X * d_Theta);
 
-    vec theta = d_Theta;
-    theta(0) = 0;
+    mat theta = d_Theta;
+    theta(0,0) = 0;
 
     //--        1  m                                                      λ   n       --//
     //--J(Ө) = --- ∑ [-y⁽i⁾ log(h_Ө(x⁽i⁾)) - (1-y⁽i⁾)log(1-h_Ө(x⁽i⁾))] + ---- ∑(Ө_j)^2--//
     //--        m  i                                                      2m  j       --//
-    cost = ((1.0/m) * sum((((-1.0) * y) % log(sig)) - ((1.0 - y) % log(1.0 - sig)))) + ((d_lamda / (2.0*m)) * (sum(theta % theta)));
+    cost = ((1.0/m) * sum((((-1.0) * y) % log(sig)) - ((1.0 - y) % log(1.0 - sig)))) + ((d_lamda / (2.0*m)) * (accu(theta % theta)));
 
     return(cost(0));
 }
@@ -106,8 +106,8 @@ double LogisticRegression::gradientdescent(const double delta)
 
     do
     {
-        vec theta = d_Theta;
-        theta(0) = 0;
+        mat theta = d_Theta;
+        theta(0,0) = 0;
 
         //--                  _                              _                --//
         //--               1 |  m                             |               --//
