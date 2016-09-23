@@ -30,6 +30,7 @@ class Regression
 {
 public:
     Regression(const DataSet&);
+    ~Regression();
 
     vec theta(void) const;
     void init_theta(void);
@@ -52,6 +53,8 @@ protected:
 
     double d_alpha;
     double d_lamda;
+
+    fstream d_lamdaCostGraph;
 };
 
 #endif // REGRESSION_H

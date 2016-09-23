@@ -17,7 +17,7 @@
 
 // CONSTRUCTOR
 
-/// Creates a Data Set object, initializing the signal ID.
+/// Creates a Data Set object.
 /// Extracts training data containing features and target from the file whose path and name is passed as a parameter.
 /// Creates new polynomial features through feature mapping.
 /// Calculates the mean and standard deviation of the data features and then the features are Mean Normalized.
@@ -69,7 +69,7 @@ DataSet::DataSet(const char* fileName, const unsigned int degree=1, const double
         exit(1);
     }
 
-    //--Extract no. of instances and the attributes of the data set on file--//
+    //--Extract no. of instances and attributes of the data set on file--//
     unsigned int instSize = instanceSize(fileName);
     unsigned int attSize = attributeSize(fileName);
 
@@ -94,18 +94,27 @@ DataSet::DataSet(const char* fileName, const unsigned int degree=1, const double
     }
 
     //--Create new features through Feature Mapping--//
-    //mat featMap_X = mapFeatures(d_X, degree);
-    d_X = mapFeatures(d_X, degree);
+    //d_X = mapFeatures(d_X, degree);
 
     //--Calculate and store the μ and σ of the features--//
     //mu = mean(featMap_X).t();
     //sigma = stddev(featMap_X).t();
-    mu = mean(d_X).t();
-    sigma = stddev(d_X).t();
+    d_mu = mean(d_X).t();
+    d_sigma = stddev(d_X).t();
+
+    //d_mu = zeros<vec>(N());
+    //d_sigma = ones<vec>(N());
+
+    //--Calculate and store the min and max of the features--//
+    d_min = min(d_X).t();
+    d_max = max(d_X).t();
 
     //--Normalize features--//
     //mat norm_X = normalizeFeatures(featMap_X);
     d_X = normalizeFeatures(d_X);
+
+    //--Create new features through Feature Mapping--//
+    d_X = mapFeatures(d_X, degree);
 
     //--Shuffle the data and segment into training and test sets--//
     //segmentDataSet(norm_X, trainPercent, testPercent);
@@ -410,7 +419,7 @@ unsigned int DataSet::testSize(void) const
 
 vec DataSet::Mean(void) const
 {
-    return mu;
+    return d_mu;
 }
 
 
@@ -420,7 +429,27 @@ vec DataSet::Mean(void) const
 
 vec DataSet::STDEV(void) const
 {
-    return sigma;
+    return d_sigma;
+}
+
+
+// vec Min(void) const method
+
+/// Returns a vector containing the minimum of the attributes.
+
+vec DataSet::Min(void) const
+{
+    return d_min;
+}
+
+
+// vec Max(void) const method
+
+/// Returns a vector containing the maximum of the attributes.
+
+vec DataSet::Max(void) const
+{
+    return d_max;
 }
 
 
@@ -440,11 +469,11 @@ vec DataSet::normalizeFeatures(const vec x)
         exit(1);
     }
 
-    if(mu.n_rows != x.n_rows)
+    if(d_mu.n_rows != x.n_rows)
     {
         cerr << "Regression: DataSet class." << endl
              << "vec normalizeFeatures(const vec) method" << endl
-             << "Rows of feature vector x: "<< x.n_rows  << " must be equal to rows of mean vector Mu: " << mu.n_rows << endl;
+             << "Rows of feature vector x: "<< x.n_rows  << " must be equal to rows of mean vector Mu: " << d_mu.n_rows << endl;
 
         exit(1);
     }
@@ -454,7 +483,7 @@ vec DataSet::normalizeFeatures(const vec x)
     //--        x_i - μ_i --//
     //--x_i <-- --------- --//
     //--           σ_i    --//
-    norm_x = (norm_x - mu) / sigma;
+    norm_x = (norm_x - d_mu) / d_sigma;
 
     return norm_x;
 }
@@ -476,11 +505,11 @@ mat DataSet::normalizeFeatures(const mat X)
         exit(1);
     }
 
-    if(X.n_cols != mu.n_rows)
+    if(X.n_cols != d_mu.n_rows)
     {
         cerr << "Regression: DataSet class." << endl
              << "mat normalizeFeatures(const mat) method" << endl
-             << "Colums of matrix X: "<< X.n_cols  << " must be equal to rows of vector Mu: " << mu.n_rows << endl;
+             << "Colums of matrix X: "<< X.n_cols  << " must be equal to rows of vector Mu: " << d_mu.n_rows << endl;
 
         exit(1);
     }
@@ -493,7 +522,7 @@ mat DataSet::normalizeFeatures(const mat X)
         //--        X_i - μ_i --//
         //--X_i <-- --------- --//
         //--           σ_i    --//
-        norm_X.col(c) = (norm_X.col(c) - mu(c)) / sigma(c);
+        norm_X.col(c) = (norm_X.col(c) - d_mu(c)) / d_sigma(c);
     }
 
     return norm_X;

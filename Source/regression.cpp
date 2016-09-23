@@ -19,12 +19,22 @@
 Regression::Regression(const DataSet& ds):d_dset(ds)
 {
     d_Theta.set_size(ds.N() + 1);
-    d_Theta.zeros();
+    //d_Theta.zeros();
+    d_Theta.randu();
 
     d_alpha = 0.1;
     d_lamda = 0.0;
+
+    remove("../Output/lamda_cost.dat");
+    d_lamdaCostGraph.open("../Output/lamda_cost.dat", ios_base::out);
+    d_lamdaCostGraph << "#Lamda  #Cost" << endl;
 }
 
+
+Regression::~Regression()
+{
+    d_lamdaCostGraph.close();
+}
 
 vec Regression::theta(void) const
 {

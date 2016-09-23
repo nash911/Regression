@@ -51,6 +51,8 @@ public:
 
     vec Mean() const;
     vec STDEV() const;
+    vec Min() const;
+    vec Max() const;
     vec normalizeFeatures(const vec);
     mat normalizeFeatures(const mat);
 
@@ -75,8 +77,11 @@ private:
     mat d_X_test;
     vec d_y_test;
 
-    vec mu;
-    vec sigma;
+    vec d_mu;
+    vec d_sigma;
+
+    vec d_min;
+    vec d_max;
 };
 
 #endif // DATASET_H

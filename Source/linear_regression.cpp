@@ -131,9 +131,12 @@ double LinearRegression::gradientdescent(const double delta)
     cout << endl << "Finished training. Training details:"
          << endl << "Iterations: " << it
          << endl << "Delta_J(Theta): " << fabs(c_prev - c)
-         << endl << "J(Theta): " << c << endl;
+         << endl << "J(Theta): " << c
+         << endl << "Theta: " << d_Theta << endl;
 
     costGraph.close();
+
+    d_lamdaCostGraph << d_lamda << " " << c << endl;
 
     return c;
 }
@@ -156,4 +159,45 @@ vec LinearRegression::predict(mat X) const
     X.insert_cols(0, X_0);
 
     return (X * d_Theta);
+}
+
+
+void LinearRegression::create_model(const unsigned int degree) const
+{
+    fstream model;
+    remove("../Output/model.dat");
+    model.open("../Output/model.dat", ios_base::out);
+    model << "#Feature  #Target" << endl;
+
+    double x = d_dset.Min()(0);
+    double resolution = 1.0;
+
+    unsigned int row_size = ((d_dset.Max()(0) - d_dset.Min()(0)) / resolution) + 1;
+    mat X = zeros<mat>(row_size, 1);
+    vec instance = zeros<vec>(1);
+
+    vec prediction;
+    double scaled_x;
+    double scaled_x_1;
+
+    for(unsigned int r=0; r<X.n_rows; r++)
+    {
+        scaled_x = (x-d_dset.Mean()(0))/d_dset.STDEV()(0);
+        instance(0) = scaled_x;
+        X(r,0) = scaled_x;
+
+        x = x + resolution;
+    }
+
+    X = d_dset.mapFeatures(X, degree);
+    prediction = predict(X);
+
+    x = d_dset.Min()(0);
+    for(unsigned int r=0; r<X.n_rows; r++)
+    {
+        model << x << " " << prediction(r) << endl;
+        x = x + resolution;
+    }
+
+    model.close();
 }

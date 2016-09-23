@@ -28,6 +28,8 @@ public:
     virtual double gradientdescent(const double);
 
     vec predict(mat) const;
+    //double test(mat, const vec) const;
+    void create_model(const unsigned int) const;
 };
 
 #endif // LINEAR_REGRESSION_H

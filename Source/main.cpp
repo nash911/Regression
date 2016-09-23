@@ -4,9 +4,9 @@
 #include "logistic_regression.h"
 
 #define ALPHA 0.01
-//#define LAMDA 1.0
+#define LAMDA 1.0
 
-#define DEGREE 1
+#define DEGREE 4
 
 #define TRAIN_PERCENT 70
 #define TEST_PERCENT 30
@@ -30,6 +30,7 @@ int main(int argc, char* argv[])
     {
         //dataFileName = "../Data/house.dat";
         dataFileName = "../Data/chip.dat";
+        //dataFileName = "../Data/servo.dat";
     }
 
     dataFile.open(dataFileName, ios_base::in);
@@ -46,13 +47,17 @@ int main(int argc, char* argv[])
 
     DataSet d(dataFileName, DEGREE, TRAIN_PERCENT, TEST_PERCENT);
 
-    //LinearRegression logR(d);
+    //LinearRegression linR(d);
     LogisticRegression logR(d);
 
     //logR.set_lamda(LAMDA);
     logR.set_alpha(ALPHA);
 
-    //logR.gradientdescent(DELTA);
+    logR.gradientdescent(DELTA);
+
+    cout << "Cost on test set: " << logR.cost(d.XTest(), d.yTest()) << endl << endl;
+
+    //logR.create_model(DEGREE);
 
     vec lamda(10);
     lamda(0) = 0.0;
