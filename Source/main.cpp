@@ -13,51 +13,55 @@
 
 #define DELTA 0.000001
 
-
-int main(int argc, char* argv[])
+void linear_regression(char* fileName=NULL)
 {
-    //--Initializing random seed--//
-    srand (time(NULL));
-
     char* dataFileName;
-    fstream dataFile;
 
-    if(argc == 2)
+    if(fileName != NULL)
     {
-        dataFileName = argv[1];
+        dataFileName = fileName;
     }
     else
     {
-        //dataFileName = "../Data/house.dat";
-        dataFileName = "../Data/chip.dat";
-        //dataFileName = "../Data/servo.dat";
+        dataFileName = "../Data/servo.dat";
     }
 
-    dataFile.open(dataFileName, ios_base::in);
-    if(!dataFile.is_open())
+    DataSet d(dataFileName, DEGREE, TRAIN_PERCENT, TEST_PERCENT, false);
+
+    LinearRegression linR(d);
+
+    linR.set_lamda(LAMDA);
+    linR.set_alpha(ALPHA);
+
+    linR.gradientdescent(DELTA);
+
+    cout << "Cost on test set: " << linR.cost(d.XTest(), d.yTest()) << endl << endl;
+
+    //linR.create_model(DEGREE);
+}
+
+
+void logistic_regression(char* fileName=NULL, const bool MNIST=false)
+{
+    char* dataFileName;
+
+    if(fileName != NULL)
     {
-        cerr << "Regression: Main." << endl
-             << "int main(int, char*) method" << endl
-             << "Cannot open data file: "<< dataFileName
-             << endl;
-
-        exit(1);
+        dataFileName = fileName;
     }
-    dataFile.close();
+    else
+    {
+        dataFileName = "../Data/chip.dat";
+    }
 
-    DataSet d(dataFileName, DEGREE, TRAIN_PERCENT, TEST_PERCENT);
+    DataSet d(dataFileName, DEGREE, TRAIN_PERCENT, TEST_PERCENT, MNIST);
 
-    //LinearRegression linR(d);
     LogisticRegression logR(d);
 
-    //logR.set_lamda(LAMDA);
+    /*logR.set_lamda(LAMDA);
     logR.set_alpha(ALPHA);
 
     logR.gradientdescent(DELTA);
-
-    cout << "Cost on test set: " << logR.cost(d.XTest(), d.yTest()) << endl << endl;
-
-    //logR.create_model(DEGREE);
 
     vec lamda(10);
     lamda(0) = 0.0;
@@ -77,8 +81,47 @@ int main(int argc, char* argv[])
         logR.init_theta();
         logR.set_lamda(lamda(i));
         logR.gradientdescent(DELTA);
-        cout << endl << "Test - " << i+1 << ": F1_Score: " << logR.f1Score(false) << endl;
+        cout << endl << "Test - " << i+1 << ": F1_Score: " << logR.f1Score(true) << endl;
+    }*/
+}
+
+int main(int argc, char* argv[])
+{
+    //--Initializing random seed--//
+    srand (time(NULL));
+
+    char* dataFileName;
+    fstream dataFile;
+    bool MNIST = false;
+
+    if(argc >= 2)
+    {
+        dataFileName = argv[1];
+
+        dataFile.open(dataFileName, ios_base::in);
+        if(!dataFile.is_open())
+        {
+            cerr << "Regression: Main." << endl
+                 << "int main(int, char*) method" << endl
+                 << "Cannot open data file: "<< dataFileName
+                 << endl;
+
+            exit(1);
+        }
+        dataFile.close();
+
+        if(!strcmp(argv[2], "-MNIST"))
+        {
+            MNIST = true;
+        }
     }
+    else
+    {
+        dataFileName = NULL;
+    }
+
+    //linear_regression(dataFileName);
+    logistic_regression(dataFileName, MNIST);
 
     return 0;
 }

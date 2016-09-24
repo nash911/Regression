@@ -28,7 +28,15 @@ using namespace arma;
 class DataSet
 {
 public:
-    DataSet(const char*, const unsigned int, const double, const double);
+    DataSet(const char*, const unsigned int, const double, const double, const bool);
+
+    void extractMNISTData(const string);
+    void extractDataFromFile(const char*, const unsigned int, const double, const double);
+
+    int ReverseInt(int);
+    void extractMNISTimg(const string, cube&);
+    void extractMNISTlabel(const string, vec&);
+    void oneHotEncode(const vec, mat&);
 
     unsigned int instanceSize(const char* const) const;
     unsigned int attributeSize(const char* const) const;
@@ -55,6 +63,7 @@ public:
     vec Max() const;
     vec normalizeFeatures(const vec);
     mat normalizeFeatures(const mat);
+    void normalizeFeatures(cube&);
 
     mat exponents(const mat, const unsigned int) const;
     mat mapFeatures(const mat, const unsigned int) const;
@@ -76,6 +85,14 @@ private:
 
     mat d_X_test;
     vec d_y_test;
+
+    cube d_train_img_cube;
+    vec d_train_label_vec;
+    mat d_train_1hot_mat;
+
+    cube d_test_img_cube;
+    vec d_test_label_vec;
+    mat d_test_1hot_mat;
 
     vec d_mu;
     vec d_sigma;

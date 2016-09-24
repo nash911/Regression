@@ -18,16 +18,13 @@
 // CONSTRUCTOR
 
 /// Creates a Data Set object.
-/// Extracts training data containing features and target from the file whose path and name is passed as a parameter.
-/// Creates new polynomial features through feature mapping.
-/// Calculates the mean and standard deviation of the data features and then the features are Mean Normalized.
-/// Shuffels the data set and divides it into training and test sets.
 /// @param fileName Path and name of the file containing the training data.
 /// @param degree Specifies the degree of polynomial for feature mapping. degree ≥ 1. degree = 1 ensures data set remains unchanged.
 /// @param trainPercent Training split of the data set > 0%.
 /// @param testPercent Test split of the data set ≥ 0%.
+/// @param MNIST Indicates if dataset is MNIST or not.
 
-DataSet::DataSet(const char* fileName, const unsigned int degree=1, const double trainPercent=70, const double testPercent=30)
+DataSet::DataSet(const char* fileName, const unsigned int degree=1, const double trainPercent=70, const double testPercent=30, const bool MNIST=false)
 {
     if(!fileName)
     {
@@ -69,6 +66,221 @@ DataSet::DataSet(const char* fileName, const unsigned int degree=1, const double
         exit(1);
     }
 
+    if(MNIST)
+    {
+        string filePath(fileName);
+        size_t found = filePath.find_last_of("/");
+        filePath = filePath.substr(0,found+1);
+
+        extractMNISTData(filePath);
+    }
+    else
+    {
+        extractDataFromFile(fileName, degree, trainPercent, testPercent);
+    }
+}
+
+
+// void extractMNISTData(const string) method.
+
+/// Extracts training and test data and the respective labels from MNIST dataset, the path of which is passed as a parameter.
+/// Encodes labels as one-hot vector format.
+/// Normalizes the training and test dat sets.
+/// @param filePath Path of the file containing MNIST dataset.
+
+void DataSet::extractMNISTData(const string filePath)
+{
+    string train_img = filePath + "train-images.idx3-ubyte";
+    string train_label = filePath + "train-labels.idx1-ubyte";
+
+    string test_img = filePath + "t10k-images.idx3-ubyte";
+    string test_label = filePath + "t10k-labels.idx1-ubyte";
+
+    fstream dataFile;
+
+    cout << endl << "   MNIST data set" << endl << "Training image file: " << train_img << endl;
+    cout << "Training labels file: " << train_label << endl;
+    cout << "Test image file: " << test_img << endl;
+    cout << "Test labels file: " << test_label << endl;
+
+    //--Extract training data and encode labels into one-hot format--//
+    extractMNISTimg(train_img, d_train_img_cube);
+    extractMNISTlabel(train_label, d_train_label_vec);
+    oneHotEncode(d_train_label_vec, d_train_1hot_mat);
+
+    //--Extract test data and encode labels into one-hot format--//
+    extractMNISTimg(test_img, d_test_img_cube);
+    extractMNISTlabel(test_label, d_test_label_vec);
+    oneHotEncode(d_test_label_vec, d_test_1hot_mat);
+
+    //--Normalize traininga and test data--//
+    normalizeFeatures(d_train_img_cube);
+    normalizeFeatures(d_test_img_cube);
+
+    /*unsigned int sample = 5154;
+    dataFile.open("../Output/number.dat", ios_base::out);
+    for(int row=d_test_img_cube.n_rows-1; row>=0; row--)
+    {
+        for(unsigned int col=0; col<d_test_img_cube.n_cols; col++)
+        {
+            dataFile << d_test_img_cube(row,col,sample) << " ";
+        }
+        dataFile << endl;
+    }
+
+    cout << endl << "label: " << d_test_label_vec(sample) << endl;
+    d_test_1hot_mat.col(sample).t().print();*/
+}
+
+
+// int ReverseInt(int) method.
+
+/// Source: http://eric-yuan.me/cpp-read-mnist/
+
+int DataSet::ReverseInt(int i)
+{
+    unsigned char ch1, ch2, ch3, ch4;
+    ch1 = i & 255;
+    ch2 = (i >> 8) & 255;
+    ch3 = (i >> 16) & 255;
+    ch4 = (i >> 24) & 255;
+    return((int) ch1 << 24) + ((int)ch2 << 16) + ((int)ch3 << 8) + ch4;
+}
+
+
+// void extractMNISTimg(const string, cube&) method.
+
+/// Extracts MNIST image data from the file whose path and name is passed as a parameter.
+/// Source: http://eric-yuan.me/cpp-read-mnist/
+/// @param fileName Path and name of the file containing the image data.
+/// @param tensor Reference of Armadillo::cube object to extract image data into.
+
+void DataSet::extractMNISTimg(const string fileName, cube &tensor)
+{
+    ifstream dataFile (fileName.c_str(), ios::binary);
+    if (!dataFile.is_open())
+    {
+        cerr << "Regression: DataSet class." << endl
+             << "void extractMNISTimg(const string, cube&) method." << endl
+             << "Unable to open image data file: "<< fileName
+             << endl;
+
+        exit(1);
+    }
+    else
+    {
+        int magic_number = 0;
+        unsigned int number_of_images = 0;
+        unsigned int n_rows = 0;
+        unsigned int n_cols = 0;
+
+        dataFile.read((char*) &magic_number, sizeof(magic_number));
+        magic_number = ReverseInt(magic_number);
+
+        dataFile.read((char*) &number_of_images, sizeof(number_of_images));
+        number_of_images = ReverseInt(number_of_images);
+
+        dataFile.read((char*) &n_rows, sizeof(n_rows));
+        n_rows = ReverseInt(n_rows);
+
+        dataFile.read((char*) &n_cols, sizeof(n_cols));
+        n_cols = ReverseInt(n_cols);
+
+        tensor.set_size(n_rows, n_cols, number_of_images);
+
+        for(unsigned int i = 0; i < number_of_images; i++)
+        {
+            mat tp(n_rows, n_cols);
+            for(unsigned int r = 0; r < n_rows; r++)
+            {
+                for(unsigned int c = 0; c < n_cols; c++)
+                {
+                    unsigned char temp = 0;
+                    dataFile.read((char*) &temp, sizeof(temp));
+                    tensor(r,c,i) = (double) temp;
+                }
+            }
+        }
+    }
+}
+
+
+// void extractMNISTlabel(const string, vec&) method.
+
+/// Extracts MNIST label data from the file whose path and name is passed as a parameter.
+/// Source: http://eric-yuan.me/cpp-read-mnist/
+/// @param fileName Path and name of the file containing the label data.
+/// @param label Reference of Armadillo::vec object to extract image data into.
+
+void DataSet::extractMNISTlabel(const string fileName, vec &label)
+{
+    ifstream dataFile (fileName.c_str(), ios::binary);
+    if (!dataFile.is_open())
+    {
+        cerr << "Regression: DataSet class." << endl
+             << "void extractMNISTlabel(const string, ved&) method." << endl
+             << "Unable to open image data file: "<< fileName
+             << endl;
+
+        exit(1);
+    }
+    else
+    {
+        int magic_number = 0;
+        unsigned int number_of_images = 0;
+
+        dataFile.read((char*) &magic_number, sizeof(magic_number));
+        magic_number = ReverseInt(magic_number);
+
+        dataFile.read((char*) &number_of_images, sizeof(number_of_images));
+        number_of_images = ReverseInt(number_of_images);
+
+        label.set_size(number_of_images);
+
+        for(unsigned int i = 0; i < number_of_images; i++)
+        {
+            unsigned char temp = 0;
+            dataFile.read((char*) &temp, sizeof(temp));
+            label(i)= (double)temp;
+        }
+    }
+}
+
+
+// void oneHotEncode(const vec, mat&) method
+
+/// Based on the labels vector y ∈ R^m, extracts k unique target values.
+/// Creates matrix Y ∈ R^(kxm), where y⁽i⁾ ∈ R^k, and of type [... 0 1 0 ...]'
+/// @param labels Vector containing instance labels.
+/// @param oneHotMat Reference of Armadillo::mat object to hold encoded one-hot vectors.
+
+void DataSet::oneHotEncode(const vec labels, mat &oneHotMat)
+{
+    vec uniqueLabels = unique(labels);
+    unsigned int instSize = labels.n_rows;
+
+    oneHotMat.set_size(uniqueLabels.n_rows, instSize);
+
+    for(unsigned int i=0; i<instSize; i++)
+    {
+        uvec indx = find(uniqueLabels == labels[i], 1);
+        oneHotMat(indx[0], i) = 1.0;
+    }
+}
+
+// void extractDataFromFile(const char*, const unsigned int, const double, const double)
+
+/// Extracts training data containing features and target from the file whose path and name is passed as a parameter.
+/// Creates new polynomial features through feature mapping.
+/// Calculates the mean and standard deviation of the data features and then the features are Mean Normalized.
+/// Shuffels the data set and divides it into training and test sets.
+/// @param fileName Path and name of the file containing the training data.
+/// @param degree Specifies the degree of polynomial for feature mapping. degree ≥ 1. degree = 1 ensures data set remains unchanged.
+/// @param trainPercent Training split of the data set > 0%.
+/// @param testPercent Test split of the data set ≥ 0%.
+
+void DataSet::extractDataFromFile(const char* fileName, const unsigned int degree, const double trainPercent, const double testPercent)
+{
     //--Extract no. of instances and attributes of the data set on file--//
     unsigned int instSize = instanceSize(fileName);
     unsigned int attSize = attributeSize(fileName);
@@ -86,38 +298,28 @@ DataSet::DataSet(const char* fileName, const unsigned int degree=1, const double
     if(d_X.n_rows != d_y.n_rows)
     {
         cerr << "Regression: DataSet class." << endl
-             << "DataSet(const char*, const unsigned int, const double, const double) constructor." << endl
+             << "void extractDataFromFile(const char*, const unsigned int, const double, const double) method." << endl
              << "No. of instances in matrix X: " << d_X.n_rows << "  and vector y: " << d_y.n_rows << " do not match."
              << endl;
 
         exit(0);
     }
 
-    //--Create new features through Feature Mapping--//
-    //d_X = mapFeatures(d_X, degree);
-
     //--Calculate and store the μ and σ of the features--//
-    //mu = mean(featMap_X).t();
-    //sigma = stddev(featMap_X).t();
     d_mu = mean(d_X).t();
     d_sigma = stddev(d_X).t();
-
-    //d_mu = zeros<vec>(N());
-    //d_sigma = ones<vec>(N());
 
     //--Calculate and store the min and max of the features--//
     d_min = min(d_X).t();
     d_max = max(d_X).t();
 
     //--Normalize features--//
-    //mat norm_X = normalizeFeatures(featMap_X);
     d_X = normalizeFeatures(d_X);
 
     //--Create new features through Feature Mapping--//
     d_X = mapFeatures(d_X, degree);
 
     //--Shuffle the data and segment into training and test sets--//
-    //segmentDataSet(norm_X, trainPercent, testPercent);
     segmentDataSet(trainPercent, testPercent);
 }
 
@@ -208,7 +410,6 @@ unsigned int DataSet::attributeSize(const char* const fileName) const
         numAttributes++;
     }
 
-
     cout << endl << "Number of attributes on file: " << numAttributes << endl;
     inputFile.close();
 
@@ -260,7 +461,6 @@ void DataSet::extractX(const char* const fileName, const unsigned int M, const u
         }
         getline(inputFile, line);
     }
-
 }
 
 
@@ -526,6 +726,45 @@ mat DataSet::normalizeFeatures(const mat X)
     }
 
     return norm_X;
+}
+
+
+// void normalizeFeatures(cube&) method
+
+/// Normalizes features of a data set in the reference Armadillo::cube object.
+/// @param X Reference of Armadillo::cube object, were each slice is an instance.
+
+void DataSet::normalizeFeatures(cube &X)
+{
+    if(!X.n_elem)
+    {
+        cerr << "Regression: DataSet class." << endl
+             << "void normalizeFeatures(cube&) method" << endl
+             << "Cube X: "<< X.n_elem  << " cannot be empty." << endl;
+
+        exit(1);
+    }
+
+    double min = X.min();
+    double max = X.max();
+    double mid = (max - min) / 2.0;
+
+    cout << endl << "Min: " << min << "  Max: " << max << "  Mid: " << mid << endl;
+
+    unsigned int rows = X.n_rows;
+    unsigned int cols = X.n_cols;
+    unsigned int slice = X.n_slices;
+
+    for(unsigned int s=0; s<slice; s++)
+    {
+        for(unsigned int r=0; r<rows; r++)
+        {
+            for(unsigned int c=0; c<cols; c++)
+            {
+                X(r,c,s) = (X(r,c,s) - mid) / max;
+            }
+        }
+    }
 }
 
 
