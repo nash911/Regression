@@ -27,7 +27,7 @@ public:
 
     virtual double h_Theta(vec) const;
     virtual double cost(mat, const vec) const;
-    virtual double gradientdescent(const double);
+    virtual mat derivative(const mat&) const;
 
     double classificationThreshold(void) const;
     void set_classificationThreshold(const double);

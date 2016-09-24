@@ -25,7 +25,7 @@ public:
 
     virtual double h_Theta(vec) const;
     virtual double cost(mat, const vec) const;
-    virtual double gradientdescent(const double);
+    virtual mat derivative(const mat&) const;
 
     vec predict(mat) const;
     //double test(mat, const vec) const;

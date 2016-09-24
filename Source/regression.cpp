@@ -35,6 +35,56 @@ Regression::~Regression()
     d_lamdaCostGraph.close();
 }
 
+
+double Regression::gradientdescent(const double delta)
+{
+    unsigned int m = d_dset.trainingSize();
+
+    mat X = d_dset.XTrain();
+    vec X_0 = ones<vec>(m);
+    X.insert_cols(0, X_0);
+
+    double c = cost(d_dset.XTrain(), d_dset.yTrain());
+    double c_prev=0;
+    unsigned int it=0;
+
+    fstream costGraph;
+    remove("../Output/cost.dat");
+    costGraph.open("../Output/cost.dat", ios_base::out);
+    costGraph << "#Iteration  #Cost" << endl;
+    costGraph << it++ << " " << c << endl;
+
+    cout << endl << "Training..." << endl;
+
+    do
+    {
+        //--               𝛼   ∂h_Ө(X) --//
+        //-- Θ_j := Θ_j - --- -------- --//
+        //--               m    ∂Θ_j   --//
+
+        //d_Theta = d_Theta - ((d_alpha/m) * ((X.t() * ((X * d_Theta) - y)) + (d_lamda * theta)));
+        d_Theta = d_Theta - ((d_alpha/m) * derivative(X));
+
+        c_prev = c;
+        c = cost(d_dset.XTrain(), d_dset.yTrain());
+
+        costGraph << it++ << " " << c << endl;
+
+    }while(fabs(c_prev - c) > delta);
+
+    cout << endl << "Finished training. Training details:"
+         << endl << "Iterations: " << it
+         << endl << "Delta_J(Theta): " << fabs(c_prev - c)
+         << endl << "J(Theta): " << c << endl;
+
+    costGraph.close();
+
+    d_lamdaCostGraph << d_lamda << " " << c << endl;
+
+    return c;
+}
+
+
 mat Regression::theta(void) const
 {
     return d_Theta;

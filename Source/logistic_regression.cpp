@@ -82,60 +82,27 @@ double LogisticRegression::cost(mat X, const vec y) const
 }
 
 
-double LogisticRegression::gradientdescent(const double delta)
+mat LogisticRegression::derivative(const mat &X) const
 {
-    unsigned int m = d_dset.trainingSize();
-
-    mat X = d_dset.XTrain();
-    vec X_0 = ones<vec>(m);
-    X.insert_cols(0, X_0);
-
     vec y = d_dset.yTrain();
 
-    double c = cost(d_dset.XTrain(), d_dset.yTrain());
-    double c_prev=0;
-    unsigned int it=0;
+    mat DeltaTheta;
+    mat theta = d_Theta;
+    theta(0,0) = 0;
 
-    fstream costGraph;
-    remove("../Output/cost.dat");
-    costGraph.open("../Output/cost.dat", ios_base::out);
-    costGraph << "#Iteration  #Cost" << endl;
-    costGraph << it++ << " " << c << endl;
+    //--             _                              _          --//
+    //-- ∂h_Ө(X)    |  m                             |         --//
+    //-- -------- = |  ∑ [h_Ө(x⁽i⁾) - y⁽i⁾] (x_j)⁽i⁾ |, ∀ j = 0--//
+    //--   ∂Θ_j     |_ i                            _|         --//
 
-    cout << endl << "Training..." << endl;
+    //--             _                                     _           --//
+    //-- ∂h_Ө(X)    |  m                                    |          --//
+    //-- -------- = |  ∑ [h_Ө(x⁽i⁾) - y⁽i⁾] (x_j)⁽i⁾ + λӨ_j |, ∀ j >= 1--//
+    //--   ∂Θ_j     |_ i                                   _|          --//
 
-    do
-    {
-        mat theta = d_Theta;
-        theta(0,0) = 0;
+    DeltaTheta = (X.t() * (sigmoid(X * d_Theta) - y)) + (d_lamda * theta);
 
-        //--                  _                              _                --//
-        //--               1 |  m                             |               --//
-        //--Ө_j := Θ_j - 𝛼---|  ∑ [h_Ө(x⁽i⁾) - y⁽i⁾] (x_j)⁽i⁾ |        ∀ j = 0--//
-        //--               m |_ i                            _|               --//
-
-        //--                  _                                     _          --//
-        //--               1 |  m                                    |         --//
-        //--Ө_j := Θ_j - 𝛼---|  ∑ [h_Ө(x⁽i⁾) - y⁽i⁾] (x_j)⁽i⁾ + λӨ_j | ∀ j >= 1--//
-        //--               m |_ i                                   _|         --//
-
-        d_Theta = d_Theta - ((d_alpha/(double)m) * ((X.t() * (sigmoid(X * d_Theta) - y)) + (d_lamda * theta)));
-
-        c_prev = c;
-        c = cost(d_dset.XTrain(), d_dset.yTrain());
-
-        costGraph << it++ << " " << c << endl;
-
-    }while(fabs(c_prev - c) > delta);
-
-    cout << endl << "Finished training. Training details:"
-         << endl << "Iterations: " << it
-         << endl << "Delta_J(Theta): " << fabs(c_prev - c)
-         << endl << "J(Theta): " << c << endl;
-
-    costGraph.close();
-
-    return c;
+    return DeltaTheta;
 }
 
 

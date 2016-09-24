@@ -84,61 +84,25 @@ double LinearRegression::cost(mat X, const vec y) const
 }
 
 
-double LinearRegression::gradientdescent(const double delta)
+mat LinearRegression::derivative(const mat &X) const
 {
-    unsigned int m = d_dset.trainingSize();
-
-    mat X = d_dset.XTrain();
-    vec X_0 = ones<vec>(m);
-    X.insert_cols(0, X_0);
-
     vec y = d_dset.yTrain();
 
-    double c = cost(d_dset.XTrain(), d_dset.yTrain());
-    double c_prev=0;
-    unsigned int it=0;
+    mat DeltaTheta;
+    mat theta = d_Theta;
+    theta(0,0) = 0;
 
-    fstream costGraph;
-    remove("../Output/cost.dat");
-    costGraph.open("../Output/cost.dat", ios_base::out);
-    costGraph << "#Iteration  #Cost" << endl;
-    costGraph << it++ << " " << c << endl;
+    //-- ∂h_Ө(X)                         --//
+    //-- -------- = (X'(XΘ - y)), ∀ j = 0--//
+    //--   ∂Θ_j                          --//
 
-    cout << endl << "Training..." << endl;
+    //-- ∂h_Ө(X)                                  --//
+    //-- -------- = (X'(XΘ - y)) + λӨ_j), ∀ j >= 1--//
+    //--   ∂Θ_j                                   --//
 
-    do
-    {
-        mat theta = d_Theta;
-        theta(0,0) = 0;
+    DeltaTheta = (X.t() * ((X * d_Theta) - y)) + (d_lamda * theta);
 
-        //--                1                               --//
-        //-- Θ_j := Θ_j - 𝛼---(X'(XΘ - y))           ∀ j = 0--//
-        //--                m                               --//
-
-        //--                1                               --//
-        //-- Θ_j := Θ_j - 𝛼---((X'(XΘ - y)) + λӨ_j) ∀ j >= 1--//
-        //--                m                               --//
-
-        d_Theta = d_Theta - ((d_alpha/m) * ((X.t() * ((X * d_Theta) - y)) + (d_lamda * theta)));
-
-        c_prev = c;
-        c = cost(d_dset.XTrain(), d_dset.yTrain());
-
-        costGraph << it++ << " " << c << endl;
-
-    }while(fabs(c_prev - c) > delta);
-
-    cout << endl << "Finished training. Training details:"
-         << endl << "Iterations: " << it
-         << endl << "Delta_J(Theta): " << fabs(c_prev - c)
-         << endl << "J(Theta): " << c
-         << endl << "Theta: " << d_Theta << endl;
-
-    costGraph.close();
-
-    d_lamdaCostGraph << d_lamda << " " << c << endl;
-
-    return c;
+    return DeltaTheta;
 }
 
 

@@ -6,7 +6,7 @@
 #define ALPHA 0.01
 #define LAMDA 1.0
 
-#define DEGREE 4
+#define DEGREE 5
 
 #define TRAIN_PERCENT 70
 #define TEST_PERCENT 30
@@ -58,10 +58,10 @@ void logistic_regression(char* fileName=NULL, const bool MNIST=false)
 
     LogisticRegression logR(d);
 
-    /*logR.set_lamda(LAMDA);
+    logR.set_lamda(LAMDA);
     logR.set_alpha(ALPHA);
 
-    logR.gradientdescent(DELTA);
+    //logR.gradientdescent(DELTA);
 
     vec lamda(10);
     lamda(0) = 0.0;
@@ -76,13 +76,13 @@ void logistic_regression(char* fileName=NULL, const bool MNIST=false)
     lamda(9) = 60.0;
 
 
-    for(unsigned int i=0; i<lamda.n_rows; i++)
+    for(unsigned int i=9; i<lamda.n_rows; i++)
     {
         logR.init_theta();
-        logR.set_lamda(lamda(i));
+        //logR.set_lamda(lamda(i));
         logR.gradientdescent(DELTA);
         cout << endl << "Test - " << i+1 << ": F1_Score: " << logR.f1Score(true) << endl;
-    }*/
+    }
 }
 
 int main(int argc, char* argv[])
@@ -120,8 +120,8 @@ int main(int argc, char* argv[])
         dataFileName = NULL;
     }
 
-    //linear_regression(dataFileName);
-    logistic_regression(dataFileName, MNIST);
+    linear_regression(dataFileName);
+    //logistic_regression(dataFileName, MNIST);
 
     return 0;
 }
