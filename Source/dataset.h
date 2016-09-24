@@ -37,6 +37,7 @@ public:
     void extractMNISTimg(const string, cube&);
     void extractMNISTlabel(const string, vec&);
     void oneHotEncode(const vec, mat&);
+    void unrollCubetoMatrix(const cube&, mat&);
 
     unsigned int instanceSize(const char* const) const;
     unsigned int attributeSize(const char* const) const;

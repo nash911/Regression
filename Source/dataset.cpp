@@ -117,13 +117,20 @@ void DataSet::extractMNISTData(const string filePath)
     normalizeFeatures(d_train_img_cube);
     normalizeFeatures(d_test_img_cube);
 
-    /*unsigned int sample = 5154;
+    unrollCubetoMatrix(d_train_img_cube, d_X_train);
+    unrollCubetoMatrix(d_test_img_cube, d_X_test);
+
+    cout << endl << "Number of training instances: " << d_X_train.n_rows << endl;
+    cout << endl << "Number of test instances: " << d_X_test.n_rows << endl;
+    cout << endl << "Number of attributes per instance: " << d_X_train.n_cols << endl;
+
+    /*unsigned int sample = 4213;
     dataFile.open("../Output/number.dat", ios_base::out);
     for(int row=d_test_img_cube.n_rows-1; row>=0; row--)
     {
         for(unsigned int col=0; col<d_test_img_cube.n_cols; col++)
         {
-            dataFile << d_test_img_cube(row,col,sample) << " ";
+            dataFile << d_X_test(sample,(row*28)+col) << " ";
         }
         dataFile << endl;
     }
@@ -267,6 +274,22 @@ void DataSet::oneHotEncode(const vec labels, mat &oneHotMat)
         oneHotMat(indx[0], i) = 1.0;
     }
 }
+
+
+void DataSet::unrollCubetoMatrix(const cube &tensor, mat &dataset)
+{
+    unsigned int instSize = tensor.n_slices;
+    unsigned int rows = tensor.n_rows;
+    unsigned int cols = tensor.n_cols;
+
+    dataset.set_size(instSize, (rows*cols));
+
+    for(unsigned int i=0; i<instSize; i++)
+    {
+        dataset.row(i) = vectorise(tensor.slice(i), 1);
+    }
+}
+
 
 // void extractDataFromFile(const char*, const unsigned int, const double, const double)
 

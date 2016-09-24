@@ -58,7 +58,7 @@ void logistic_regression(char* fileName=NULL, const bool MNIST=false)
 
     LogisticRegression logR(d);
 
-    logR.set_lamda(LAMDA);
+    /*logR.set_lamda(LAMDA);
     logR.set_alpha(ALPHA);
 
     //logR.gradientdescent(DELTA);
@@ -82,7 +82,7 @@ void logistic_regression(char* fileName=NULL, const bool MNIST=false)
         //logR.set_lamda(lamda(i));
         logR.gradientdescent(DELTA);
         cout << endl << "Test - " << i+1 << ": F1_Score: " << logR.f1Score(true) << endl;
-    }
+    }*/
 }
 
 int main(int argc, char* argv[])
@@ -120,8 +120,8 @@ int main(int argc, char* argv[])
         dataFileName = NULL;
     }
 
-    linear_regression(dataFileName);
-    //logistic_regression(dataFileName, MNIST);
+    //linear_regression(dataFileName);
+    logistic_regression(dataFileName, MNIST);
 
     return 0;
 }
