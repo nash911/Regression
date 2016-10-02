@@ -29,7 +29,7 @@ DataSet::DataSet(const char* fileName, const unsigned int degree=1, const double
     if(!fileName)
     {
         cerr << "Regression: DataSet class." << endl
-             << "DataSet(const char*, const unsigned int, const double, const double) constructor." << endl
+             << "DataSet(const char*, const unsigned int, const double, const double, const bool) constructor." << endl
              << "Cannot open data file: " << fileName
              << endl;
 
@@ -39,7 +39,7 @@ DataSet::DataSet(const char* fileName, const unsigned int degree=1, const double
     if(degree == 0)
     {
         cerr << "Regression: DataSet class." << endl
-             << "DataSet(const char*, const unsigned int, const double, const double) constructor." << endl
+             << "DataSet(const char*, const unsigned int, const double, const double, const bool) constructor." << endl
              << "Parameter degree: " << degree << " for polynomial feature mapping has to be >= 1 "
              << endl;
 
@@ -49,7 +49,7 @@ DataSet::DataSet(const char* fileName, const unsigned int degree=1, const double
     if(trainPercent <= 0.0 || testPercent < 0.0)
     {
         cerr << "Regression: DataSet class." << endl
-             << "DataSet(const char*, const unsigned int, const double, const double) constructor." << endl
+             << "DataSet(const char*, const unsigned int, const double, const double, const bool) constructor." << endl
              << "Training set = " << trainPercent << "% has to be > 0% and Test set = "<< testPercent << "% has to be >= 0%."
              << endl;
 
@@ -59,7 +59,7 @@ DataSet::DataSet(const char* fileName, const unsigned int degree=1, const double
     if(trainPercent + testPercent != 100.0)
     {
         cerr << "Regression: DataSet class." << endl
-             << "DataSet(const char*, const unsigned int, const double, const double) constructor." << endl
+             << "DataSet(const char*, const unsigned int, const double, const double, const bool) constructor." << endl
              << "Training set = " << trainPercent << " + Test set = "<< testPercent << " has to be equal to 100%."
              << endl;
 
@@ -103,14 +103,19 @@ void DataSet::extractMNISTData(const string filePath)
     cout << "Test image file: " << test_img << endl;
     cout << "Test labels file: " << test_label << endl;
 
-    //--Extract training data and encode labels into one-hot format--//
+    //--Extract training data and labels--//
     extractMNISTimg(train_img, d_train_img_cube);
     extractMNISTlabel(train_label, d_train_label_vec);
-    oneHotEncode(d_train_label_vec, d_train_1hot_mat);
 
-    //--Extract test data and encode labels into one-hot format--//
+    //--Extract training data and labels--//
     extractMNISTimg(test_img, d_test_img_cube);
     extractMNISTlabel(test_label, d_test_label_vec);
+
+    //--Extract unique labels and sort them--//
+    d_class = sort(unique(d_train_label_vec));
+
+    //--Encode training and test labels into one-hot format--//
+    oneHotEncode(d_train_label_vec, d_train_1hot_mat);
     oneHotEncode(d_test_label_vec, d_test_1hot_mat);
 
     //--Normalize traininga and test data--//
@@ -123,20 +128,7 @@ void DataSet::extractMNISTData(const string filePath)
     cout << endl << "Number of training instances: " << d_X_train.n_rows << endl;
     cout << endl << "Number of test instances: " << d_X_test.n_rows << endl;
     cout << endl << "Number of attributes per instance: " << d_X_train.n_cols << endl;
-
-    /*unsigned int sample = 4213;
-    dataFile.open("../Output/number.dat", ios_base::out);
-    for(int row=d_test_img_cube.n_rows-1; row>=0; row--)
-    {
-        for(unsigned int col=0; col<d_test_img_cube.n_cols; col++)
-        {
-            dataFile << d_X_test(sample,(row*28)+col) << " ";
-        }
-        dataFile << endl;
-    }
-
-    cout << endl << "label: " << d_test_label_vec(sample) << endl;
-    d_test_1hot_mat.col(sample).t().print();*/
+    cout << endl << "Label class vector:" << d_class.t();
 }
 
 
@@ -263,18 +255,35 @@ void DataSet::extractMNISTlabel(const string fileName, vec &label)
 
 void DataSet::oneHotEncode(const vec labels, mat &oneHotMat)
 {
-    vec uniqueLabels = unique(labels);
-    unsigned int instSize = labels.n_rows;
+    //vec uniqueLabels = unique(labels);
+    if(d_class.is_empty())
+    {
+        cerr << "Regression: DataSet class." << endl
+             << "void oneHotEncode(const vec, mat&) method." << endl
+             << "Labels class vector cannot be empty."
+             << endl;
 
-    oneHotMat.set_size(uniqueLabels.n_rows, instSize);
+        exit(0);
+    }
+
+    unsigned int instSize = labels.n_rows;
+    oneHotMat.set_size(d_class.n_rows, instSize);
+    oneHotMat.zeros();
 
     for(unsigned int i=0; i<instSize; i++)
     {
-        uvec indx = find(uniqueLabels == labels[i], 1);
+        uvec indx = find(d_class == labels[i], 1);
         oneHotMat(indx[0], i) = 1.0;
     }
 }
 
+
+// void unrollCubetoMatrix(const cube&, mat&) method
+
+/// Unroll a cube into a matrix.
+/// Each slice of the cube is unroller into a row vector of the resulting matrix.
+/// @param tensor Reference to 3D Cube containing instances in the form of 2D matrices.
+/// @param dataset Reference of Armadillo::mat object to hold unrolled data in the form of row vectors.
 
 void DataSet::unrollCubetoMatrix(const cube &tensor, mat &dataset)
 {
@@ -318,6 +327,9 @@ void DataSet::extractDataFromFile(const char* fileName, const unsigned int degre
     d_y.zeros();
     extractY(fileName, instSize, attSize);
 
+    //--Extract unique labels and sort them--//
+    d_class = sort(unique(d_y));
+
     if(d_X.n_rows != d_y.n_rows)
     {
         cerr << "Regression: DataSet class." << endl
@@ -327,6 +339,9 @@ void DataSet::extractDataFromFile(const char* fileName, const unsigned int degre
 
         exit(0);
     }
+
+    //--Create new features through Feature Mapping--//
+    d_X = mapFeatures(d_X, degree);
 
     //--Calculate and store the μ and σ of the features--//
     d_mu = mean(d_X).t();
@@ -339,11 +354,12 @@ void DataSet::extractDataFromFile(const char* fileName, const unsigned int degre
     //--Normalize features--//
     d_X = normalizeFeatures(d_X);
 
-    //--Create new features through Feature Mapping--//
-    d_X = mapFeatures(d_X, degree);
-
     //--Shuffle the data and segment into training and test sets--//
     segmentDataSet(trainPercent, testPercent);
+
+    //--Encode train and test lables into one-hot format--//
+    oneHotEncode(d_y_train, d_train_1hot_mat);
+    oneHotEncode(d_y_test, d_test_1hot_mat);
 }
 
 
@@ -546,7 +562,7 @@ mat DataSet::X(void) const
 }
 
 
-// mat y(void) const method
+// vec y(void) const method
 
 /// Returns a vector containing the targets of the data set.
 
@@ -556,9 +572,19 @@ vec DataSet::y(void) const
 }
 
 
+// vec labels(void) const method
+
+/// Returns a vector containing the k distinct labels of the data set.
+
+vec DataSet::labels(void) const
+{
+    return d_class;
+}
+
+
 // unsigned int M(void) const method
 
-/// Returns the attribute size of the data set.
+/// Returns the instance size of the data set.
 
 unsigned int DataSet::M(void) const
 {
@@ -566,33 +592,53 @@ unsigned int DataSet::M(void) const
 }
 
 
-// unsigned int M(void) const method
+// unsigned int N(void) const method
 
-/// Returns the target size of the data set.
+/// Returns the attribute size of the training set.
 
 unsigned int DataSet::N(void) const
 {
-    return d_X.n_cols;
+    return d_X_train.n_cols;
 }
 
 
-// mat XTrain(void) const method
+// unsigned int K(void) const method
 
-/// Returns a matrix containing the attributes of the training set.
+/// Returns the class size of the data set.
 
-mat DataSet::XTrain(void) const
+unsigned int DataSet::K(void) const
+{
+    return d_class.n_rows;
+}
+
+
+// mat& XTrain(void) method
+
+/// Returns reference to a matrix containing the instances of the training set.
+
+mat& DataSet::XTrain(void)
 {
     return d_X_train;
 }
 
 
-// mat YTrain(void) const method
+// mat& YTrain(void) method
 
-/// Returns a vector containing the targets of the training set.
+/// Returns reference to a matrix of size Mx1, containing targets of the training set.
 
-vec DataSet::yTrain(void) const
+mat& DataSet::yTrain(void)
 {
     return d_y_train;
+}
+
+
+// mat& Train_oneHotMatrix(void) method
+
+/// Returns reference to a matrix containing targets of the training set, in the form of one-hot vector format.
+
+mat& DataSet::Train_oneHotMatrix(void)
+{
+    return d_train_1hot_mat;
 }
 
 
@@ -606,23 +652,33 @@ unsigned int DataSet::trainingSize(void) const
 }
 
 
-// mat XTest(void) const method
+// mat& XTest(void) method
 
-/// Returns a matrix containing the attributes of the test set.
+/// Returns reference to a matrix containing instances of the test set.
 
-mat DataSet::XTest(void) const
+mat& DataSet::XTest(void)
 {
     return d_X_test;
 }
 
 
-// mat YTest(void) const method
+// mat& YTest(void) method
 
-/// Returns a vector containing the targest of the test set.
+/// Returns reference to a matrix of size Mx1, containing targest of the test set.
 
-vec DataSet::yTest(void) const
+mat& DataSet::yTest(void)
 {
     return d_y_test;
+}
+
+
+// mat& Test_oneHotMatrix(void) method
+
+/// Returns reference to a matrix containing targets of the test set, in the form of one-hot vector format.
+
+mat& DataSet::Test_oneHotMatrix(void)
+{
+    return d_test_1hot_mat;
 }
 
 
@@ -883,8 +939,24 @@ mat DataSet::mapFeatures(const mat X, const unsigned int degree) const
 }
 
 
+// void segmentDataSet(const double, const double) const method
+
+/// Shuffels the data set and divides it into training and test sets.
+/// @param trainPercent Training split of the data set > 0%.
+/// @param testPercent Test split of the data set ≥ 0%.
+
 void DataSet::segmentDataSet(const double trainPercent, const double testPercent)
 {
+    if(!(trainPercent >= 0.0 && trainPercent <= 100.0) || !(testPercent >= 0.0 && testPercent <= 100.0))
+    {
+        cerr << "Regression: DataSet class." << endl
+             << "void segmentDataSet(const double, const double) method" << endl
+             << "Training size(%): " << trainPercent << " and Test size(%): " << testPercent << " should both be in the range [0,100]."
+             << endl;
+
+        exit(1);
+    }
+
     if(trainPercent + testPercent != 100.0)
     {
         cerr << "Regression: DataSet class." << endl
@@ -910,19 +982,22 @@ void DataSet::segmentDataSet(const double trainPercent, const double testPercent
     unsigned int testSize = m - trainSize;
 
     //--Segregate data into training and test sets--//
-    d_X_train = Xy;
-    if(testSize)
+    if(trainSize)
     {
+        d_X_train = Xy;
         d_X_train.shed_rows(trainSize, m-1);
-    }
-    d_y_train = d_X_train.col(n);
-    d_X_train.shed_col(n);
 
+        d_y_train = d_X_train.col(n);
+        d_X_train.shed_col(n);
+    }
 
     if(testSize)
     {
         d_X_test = Xy;
-        d_X_test.shed_rows(0, trainSize-1);
+        if(trainSize)
+        {
+            d_X_test.shed_rows(0, trainSize-1);
+        }
 
         d_y_test = d_X_test.col(n);
         d_X_test.shed_col(n);
@@ -943,6 +1018,10 @@ void DataSet::segmentDataSet(const double trainPercent, const double testPercent
 }
 
 
+// void printDataSet(void) const method
+
+/// Print the combined training and test data set.
+
 void DataSet::printDataSet(void) const
 {
     //--Combine matrix X and vector y by inserting vector y as the last column of X--//
@@ -953,6 +1032,10 @@ void DataSet::printDataSet(void) const
     Xy.print();
 }
 
+
+// void printTrainingSet(void) const method
+
+/// Print the training data set.
 
 void DataSet::printTrainingSet(void) const
 {
@@ -965,6 +1048,10 @@ void DataSet::printTrainingSet(void) const
 }
 
 
+// void printTestSet(void) const method
+
+/// Print the test data set.
+
 void DataSet::printTestSet(void) const
 {
     //--Combine matrix XTest and vector yTest by inserting vector yTest as the last column of XTest--//
@@ -974,6 +1061,12 @@ void DataSet::printTestSet(void) const
     cout << endl << "Test set:" << endl;
     Xy.print();
 }
+
+
+// void saveToFile(const mat) const method
+
+/// Save a matrix to a file in matrix format.
+/// @param A Matrix to be saved.
 
 void DataSet::saveToFile(const mat A) const
 {

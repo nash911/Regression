@@ -23,9 +23,9 @@ class LinearRegression: public Regression
 public:
     LinearRegression(const DataSet&);
 
-    virtual double h_Theta(vec) const;
-    virtual double cost(mat, const vec) const;
-    virtual mat derivative(const mat&) const;
+    virtual vec h_Theta(vec) const;
+    virtual double cost(mat&, const mat&) const;
+    virtual mat derivative(const mat&, const mat&) const;
 
     vec predict(mat) const;
     //double test(mat, const vec) const;

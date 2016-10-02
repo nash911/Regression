@@ -16,18 +16,18 @@
 #include "linear_regression.h"
 
 
-LinearRegression::LinearRegression(const DataSet& ds):Regression(ds)
+LinearRegression::LinearRegression(const DataSet& ds):Regression(ds, "Regression")
 {
 
 }
 
 
-double LinearRegression::h_Theta(vec x) const
+vec LinearRegression::h_Theta(vec x) const
 {
     if(x.n_rows != d_Theta.n_rows-1)
     {
         cerr << "Regression: LinearRegression class." << endl
-             << "double h_Theta(vec) const method" << endl
+             << "vec h_Theta(vec) const method" << endl
              << "Size of vectors x: "<< x.n_rows  << " and Theta: " << d_Theta.n_rows << " are incompatable." << endl;
 
         exit(1);
@@ -40,57 +40,69 @@ double LinearRegression::h_Theta(vec x) const
     //--h_Ө(x) = Ө'x--//
     vec h = d_Theta.t() * x;
 
-    return(h(0));
+    return(h);
 }
 
 
-double LinearRegression::cost(mat X, const vec y) const
+double LinearRegression::cost(mat& X, const mat& Y) const
 {
-    if(X.n_rows != y.n_rows)
+    if(X.n_rows != Y.n_rows)
     {
         cerr << "Regression: LinearRegression class." << endl
-             << "double cost(mat, const vec) const method" << endl
-             << "Rows of matrix X: "<< X.n_rows  << " must be equal to rows of vector y: " << y.n_rows << endl;
+             << "double cost(mat&, const vec&) const method" << endl
+             << "Rows of matrix X: "<< X.n_rows  << " must be equal to rows of Mx1 matrix Y: " << Y.n_rows << endl;
 
         exit(1);
     }
 
-    if(X.n_cols != d_Theta.n_rows-1)
+    if(X.n_cols != d_Theta.n_rows && X.n_cols != d_Theta.n_rows-1)
     {
         cerr << "Regression: LinearRegression class." << endl
-             << "double cost(mat, const vec) const method" << endl
-             << "Colum size of matrix X: "<< X.n_cols  << " and size of vector Theta: " << d_Theta.n_rows << " are incompatable." << endl;
+             << "double cost(mat&, const vec&) const method" << endl
+             << "Colum size of matrix X: "<< X.n_cols  << " and row size of Theta: " << d_Theta.n_rows << " are incompatable." << endl;
 
         exit(1);
     }
 
     double m = X.n_rows;
     vec cost;
+    bool bias_term_added = false;
 
-    vec X_0 = ones<vec>(m);
-    X.insert_cols(0, X_0);
+    if(X.n_cols == d_Theta.n_rows-1)
+    {
+        vec X_0 = ones<vec>(m);
+        X.insert_cols(0, X_0);
+
+        bias_term_added = true;
+    }
 
     mat theta = d_Theta;
-    theta(0,0) = 0;
+    theta.row(0).zeros();
 
     //--           _                                   _ --//
     //--        1 |  m                         n        |--//
     //--J(Ө) = ---|  ∑[h_Ө(x⁽i⁾) - y⁽i⁾]^2 +  λ∑(Ө_j)^2]|--//
     //--       2m |_ i                         j       _|--//
 
-    cost = (1.0/(2.0*m)) * ((((X * d_Theta) - y).t() * ((X * d_Theta) - y)) + (d_lamda * accu(theta % theta)));
+    mat residue = ((X * d_Theta) - Y);
+    cost = (1.0/(2.0*m)) * ((residue.t() * residue) + (d_lamda * accu(theta % theta)));
+
+    if(bias_term_added)
+    {
+        X.shed_col(0);
+    }
 
     return(cost(0));
 }
 
 
-mat LinearRegression::derivative(const mat &X) const
+mat LinearRegression::derivative(const mat& X, const mat& Y) const
 {
-    vec y = d_dset.yTrain();
+    //vec y = d_dset.yTrain();
 
     mat DeltaTheta;
     mat theta = d_Theta;
-    theta(0,0) = 0;
+    theta.row(0).zeros();
 
     //-- ∂h_Ө(X)                         --//
     //-- -------- = (X'(XΘ - y)), ∀ j = 0--//
@@ -100,7 +112,7 @@ mat LinearRegression::derivative(const mat &X) const
     //-- -------- = (X'(XΘ - y)) + λӨ_j), ∀ j >= 1--//
     //--   ∂Θ_j                                   --//
 
-    DeltaTheta = (X.t() * ((X * d_Theta) - y)) + (d_lamda * theta);
+    DeltaTheta = (X.t() * ((X * d_Theta) - Y)) + (d_lamda * theta);
 
     return DeltaTheta;
 }

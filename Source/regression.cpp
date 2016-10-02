@@ -16,14 +16,56 @@
 #include "regression.h"
 
 
-Regression::Regression(const DataSet& ds):d_dset(ds)
+Regression::Regression(const DataSet& ds, const char* type):d_dset(ds)
 {
-    d_Theta.set_size((ds.N() + 1),1);
+    if(!strcmp(type, "Regression"))
+    {
+        d_reg_type = Regres;
+        d_Theta.set_size((ds.N() + 1), 1);
+    }
+    else if(!strcmp(type, "Classification"))
+    {
+        d_reg_type = Classif;
+
+        unsigned int features = ds.N();
+        unsigned int classes = ds.K();
+
+        if(!features)
+        {
+            cerr << "Regression: Regression class." << endl
+                 << "Regression(const DataSet&, const char*) constructor" << endl
+                 << "Feature size: " << features << " of the dataset cannot be 0." << endl;
+
+            exit(1);
+        }
+        else if(!classes)
+        {
+            cerr << "Regression: Regression class." << endl
+                 << "Regression(const DataSet&, const char*) constructor" << endl
+                 << "Class size: " << classes << " of the dataset cannot be 0." << endl;
+
+            exit(1);
+        }
+
+        d_Theta.set_size((features + 1), classes);
+    }
+    else
+    {
+        cerr << "Regression: Regression class." << endl
+             << "Regression(const DataSet&, const char*) constructor" << endl
+             << "Invalid regression type: " << type << endl;
+
+        exit(1);
+    }
+
+    //--Initialize theta matrix with uniform random--//
     d_Theta.randu();
 
+    //--Default 𝛼 and λ parameter values--//
     d_alpha = 0.1;
     d_lamda = 0.0;
 
+    //--Initialize λ-graph file--//
     remove("../Output/lamda_cost.dat");
     d_lamdaCostGraph.open("../Output/lamda_cost.dat", ios_base::out);
     d_lamdaCostGraph << "#Lamda  #Cost" << endl;
@@ -36,17 +78,20 @@ Regression::~Regression()
 }
 
 
-double Regression::gradientdescent(const double delta)
+double Regression::gradientdescent(mat X, const mat Y, const double delta, const unsigned int max_iter = 0)
 {
-    unsigned int m = d_dset.trainingSize();
+    unsigned int m = X.n_rows;
 
-    mat X = d_dset.XTrain();
+    //--Adding bias terms to the data--//
     vec X_0 = ones<vec>(m);
     X.insert_cols(0, X_0);
 
-    double c = cost(d_dset.XTrain(), d_dset.yTrain());
+    double c = 0;
     double c_prev=0;
     unsigned int it=0;
+
+    //--Calculating pretrained cost of the dataset--//
+    c = cost(X, Y);
 
     fstream costGraph;
     remove("../Output/cost.dat");
@@ -58,19 +103,18 @@ double Regression::gradientdescent(const double delta)
 
     do
     {
-        //--               𝛼   ∂h_Ө(X) --//
-        //-- Θ_j := Θ_j - --- -------- --//
-        //--               m    ∂Θ_j   --//
+        //--               𝛼   ∂J(Ө)  --//
+        //-- Θ_j := Θ_j - --- ------- --//
+        //--               m   ∂Θ_j   --//
 
-        //d_Theta = d_Theta - ((d_alpha/m) * ((X.t() * ((X * d_Theta) - y)) + (d_lamda * theta)));
-        d_Theta = d_Theta - ((d_alpha/m) * derivative(X));
+        d_Theta = d_Theta - ((d_alpha/m) * derivative(X,Y));
 
         c_prev = c;
-        c = cost(d_dset.XTrain(), d_dset.yTrain());
+        c = cost(X, Y);
 
         costGraph << it++ << " " << c << endl;
 
-    }while(fabs(c_prev - c) > delta);
+    }while(fabs(c_prev - c) > delta && (max_iter ? ((it <= max_iter) ? true : false) : true));
 
     cout << endl << "Finished training. Training details:"
          << endl << "Iterations: " << it
@@ -91,19 +135,6 @@ mat Regression::theta(void) const
 }
 
 
-void Regression::printTheta(void) const
-{
-    cout << endl << "Theta:" << endl;
-    for(unsigned int i=0; i<d_Theta.n_rows; i++)
-    {
-        for(unsigned int j=0; j<d_Theta.n_cols; j++)
-        {
-            cout << "theta[" << i << "," << j << "]:" << d_Theta(i,j) << endl;
-        }
-    }
-}
-
-
 void Regression::init_theta(void)
 {
     if(d_Theta.n_rows == 0)
@@ -118,6 +149,65 @@ void Regression::init_theta(void)
     {
         d_Theta.randu();
     }
+}
+
+
+void Regression::printTheta(void) const
+{
+    cout << endl << "Theta:" << endl;
+    for(unsigned int i=0; i<d_Theta.n_rows; i++)
+    {
+        for(unsigned int j=0; j<d_Theta.n_cols; j++)
+        {
+            cout << "theta[" << i << "," << j << "]:" << d_Theta(i,j) << endl;
+        }
+    }
+}
+
+
+string Regression::regressionType(void) const
+{
+    switch(d_reg_type)
+    {
+    case Regres:
+    {
+        return("Regression");
+    }
+    case Classif:
+    {
+        return("Classification");
+    }
+    default:
+    {
+        cerr << "Regression: Regression class." << endl
+             << "string regressionType(void) method" << endl
+             << "Invalid regression type: "<< d_reg_type  << endl;
+
+        exit(1);
+    }
+    }
+}
+
+
+void Regression::set_regressionType(const string& reg_type)
+{
+    if(reg_type == "Regression")
+    {
+        d_reg_type = Regres;
+    }
+    else if(reg_type == "Classification")
+    {
+        d_reg_type = Classif;
+    }
+    else
+    {
+        cerr << "Regression: Regression class." << endl
+             << "void set_regressionType(const string&) method" << endl
+             << "Invalid regression type: "<< reg_type  << endl;
+
+        exit(1);
+    }
+
 }
 
 

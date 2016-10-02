@@ -23,24 +23,30 @@
 class LogisticRegression: public Regression
 {
 public:
+    enum ClassificationFunction{Sigmoid, Softmax};
+
     LogisticRegression(const DataSet&);
 
-    virtual double h_Theta(vec) const;
-    virtual double cost(mat, const vec) const;
-    virtual mat derivative(const mat&) const;
+    virtual vec h_Theta(vec) const;
+    virtual double cost(mat&, const mat&) const;
+    virtual mat derivative(const mat&, const mat&) const;
+
+    string classificationFunction(void) const;
+    void set_classificationFunction(const string&);
 
     double classificationThreshold(void) const;
     void set_classificationThreshold(const double);
 
-    vec sigmoid(const vec) const;
-    uvec predict(mat) const;
+    mat sigmoid(const mat) const;
+    mat softmax(const mat) const;
+    mat predict(mat, const mat) const;
 
-    mat confusionMatrix(const mat, const vec) const;
-    void print_confusionMatrix(const mat) const;
-    double f1Score(const bool) const;
-    double f1Score(const mat, const vec, const bool) const;
+    umat confusionMatrix(const mat, const mat) const;
+    void print_confusionMatrix(const umat) const;
+    double f1Score(const mat, const mat, const bool) const;
 
 private:
+    ClassificationFunction d_class_func;
     double d_classification_threshold;
 };
 

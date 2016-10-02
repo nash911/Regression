@@ -47,15 +47,20 @@ public:
 
     mat X() const;
     vec y() const;
+    vec labels() const;
+
     unsigned int M() const;
     unsigned int N() const;
+    unsigned int K() const;
 
-    mat XTrain() const;
-    vec yTrain() const;
+    mat& XTrain();
+    mat& yTrain();
+    mat& Train_oneHotMatrix();
     unsigned int trainingSize(void) const;
 
-    mat XTest() const;
-    vec yTest() const;
+    mat& XTest();
+    mat& yTest();
+    mat& Test_oneHotMatrix();
     unsigned int testSize(void) const;
 
     vec Mean() const;
@@ -94,6 +99,8 @@ private:
     cube d_test_img_cube;
     vec d_test_label_vec;
     mat d_test_1hot_mat;
+
+    vec d_class;
 
     vec d_mu;
     vec d_sigma;
