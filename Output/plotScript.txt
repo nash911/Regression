@@ -1,3 +1,10 @@
+set xlabel "Feature (x)"
+set ylabel "Target (y)"
+plot "servo.dat" using 1:2 with points title 'Data', \
+     "../Output/model.dat" using 1:2 with lines title 'Linear Fit'
+
 set xlabel "No. of iterations"
 set ylabel "Cost J"
 plot "cost.dat" using 1:2 with lines title 'Cost'
+
+plot "lamda_cost.dat" using 1:2 with lines title 'Cost'
